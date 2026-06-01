@@ -7357,6 +7357,8 @@ window.sheetsBaslandir = async function sheetsBaslandir(urlParam) {
     const el = document.getElementById('son-senkron');
     if (el) el.textContent = new Date().toLocaleString('tr-TR');
     localStorage.setItem('incek_son_senkron', new Date().toISOString());
+    // Bağlantı kurulduktan sonra güncel veriyi çek
+    try { await otomatikSheetsYukle(); } catch(e) { console.warn('Veri yukleme hatasi:', e); }
   } catch(e) {
     setSheetsStatus('hata', 'Hata: ' + e.message);
   }
