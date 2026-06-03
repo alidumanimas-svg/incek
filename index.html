@@ -1968,7 +1968,7 @@ function jsonpFetch(url) {
 }
 
 function getSheetsUrl() {
-  return localStorage.getItem(SHEETS_URL_KEY) || 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+  return localStorage.getItem(SHEETS_URL_KEY) || 'https://script.google.com/macros/s/AKfycbx91dkfMT805blMp_oWUxSZc6eFDwsl35GKiUQ3nEYO3hj7WHGGA5HppFdDl-kEHxg/exec';
 }
 
 function setSheetsStatus(durum, mesaj) {
@@ -5215,7 +5215,7 @@ async function kaydetYeniTaksit(name) {
   sonuc.innerHTML = '<span style="color:var(--gold2)">Sheets\'e yaziliyor...</span>';
 
   // 3) Sheets'e yaz (JSONP)
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx91dkfMT805blMp_oWUxSZc6eFDwsl35GKiUQ3nEYO3hj7WHGGA5HppFdDl-kEHxg/exec';
   try {
     await new Promise((resolve, reject) => {
       const cbName = 'ytCb_' + Date.now();
@@ -6251,7 +6251,7 @@ window.sheetsYenile = async function sheetsYenile() {
 }
 
 window.otomatikSheetsYukle = async function otomatikSheetsYukle() {
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx91dkfMT805blMp_oWUxSZc6eFDwsl35GKiUQ3nEYO3hj7WHGGA5HppFdDl-kEHxg/exec';
   
   // Kendi JSONP fetch
   function myJsonpFetch(url) {
@@ -6298,19 +6298,19 @@ window.otomatikSheetsYukle = async function otomatikSheetsYukle() {
         }));
       return {
         proje: proje, name: adSoyadi,
-        kat: d['KAT-DAİRE'] || d['KAT/DAİRE'] || '',
+        kat: d['KAT/DAİRE'] || '',
         cins: d['CİNS'] || '',
-        toplam: parseFloat(d['TOPLAM TUTAR']) || parseFloat(d['TOPLAM']) || parseFloat(d['t']) || 0,
+        toplam: parseFloat(d['TOPLAM']) || parseFloat(d['t']) || 0,
         odened: parseFloat(d['ÖDENEN']) || parseFloat(d['ODENEN']) || parseFloat(d['o']) || 0,
         kalan: parseFloat(d['KALAN']) || parseFloat(d['ka']) || 0,
         tel: d['TELEFON'] || '',
-        sozlesme: d['SÖZLEŞME TARİHİ'] || d['SÖZLEŞME'] || '',
+        sozlesme: d['SÖZLEŞME'] || '',
         temsilci: d['TEMSILCİ'] || d['TEMİLCİ'] || '',
         komisyon: parseFloat(d['KOMİSYON']) || 0,
         pesinat: parseFloat(d['PEŞİNAT']) || parseFloat(d['ÖDENEN']) || 0,
         durum: d['DURUM'] || '',
-        next_due: d['SONRAKI VADE'] || d['GECİKME TARİH'] || null,
-        gecikme: parseInt(d['GECİKME']) || parseInt(d['GECİKME GÜN']) || 0,
+        next_due: d['GECİKME TARİH'] || null,
+        gecikme: parseInt(d['GECİKME GÜN']) || 0,
         taksitler: taksitler
       };
     });
@@ -7109,7 +7109,7 @@ function projeRaporuPDF() {
 </script>
 <script>
 // ── SHEETS TAM BACKEND ────────────────────────────────────────────
-const SHEETS_URL_V5 = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+const SHEETS_URL_V5 = 'https://script.google.com/macros/s/AKfycbx91dkfMT805blMp_oWUxSZc6eFDwsl35GKiUQ3nEYO3hj7WHGGA5HppFdDl-kEHxg/exec';
 
 function sheetsJsonp(params) {
   return new Promise((resolve, reject) => {
@@ -7357,8 +7357,6 @@ window.sheetsBaslandir = async function sheetsBaslandir(urlParam) {
     const el = document.getElementById('son-senkron');
     if (el) el.textContent = new Date().toLocaleString('tr-TR');
     localStorage.setItem('incek_son_senkron', new Date().toISOString());
-    // Bağlantı kurulduktan sonra güncel veriyi çek
-    try { await otomatikSheetsYukle(); } catch(e) { console.warn('Veri yukleme hatasi:', e); }
   } catch(e) {
     setSheetsStatus('hata', 'Hata: ' + e.message);
   }
@@ -7367,7 +7365,7 @@ window.sheetsBaslandir = async function sheetsBaslandir(urlParam) {
 </script>
 <script>
 // ── SHEETS YAZMA FONKSİYONLARI ───────────────────────────────────
-const _SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+const _SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx91dkfMT805blMp_oWUxSZc6eFDwsl35GKiUQ3nEYO3hj7WHGGA5HppFdDl-kEHxg/exec';
 
 function sheetsPost(data) {
   return new Promise((resolve, reject) => {
