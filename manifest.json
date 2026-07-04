@@ -2,7 +2,7 @@
   "name": "İNCEK Gayrimenkul CRM",
   "short_name": "İNCEK CRM",
   "description": "İMAS Gayrimenkul müşteri ve tahsilat takip sistemi",
-  "start_url": "./index_fixed.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

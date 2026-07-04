@@ -1,6 +1,6 @@
 // İNCEK CRM Service Worker
 const CACHE = 'incek-crm-v1';
-const CORE = ['./index_fixed.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CORE = ['./', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

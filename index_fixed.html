@@ -8362,8 +8362,6 @@ window.sheetsBaslandir = async function sheetsBaslandir(urlParam) {
 <script>
 // ── SHEETS YAZMA FONKSİYONLARI ───────────────────────────────────
 const _SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
-// Müşteri ekleme + taksit güncelleme için ayrı backend (INCEK Musteri Ekleme projesi)
-const _MUSTERI_URL = 'https://script.google.com/macros/s/AKfycbx6MHjAM6iR9HYJs_PihB3Q9f0Fy6jXwD7Y823yQF556CWwRMP28IbRtBoSU68qfBQ/exec';
 
 function sheetsPost(data) {
   return new Promise((resolve, reject) => {
@@ -8372,9 +8370,7 @@ function sheetsPost(data) {
     const t = setTimeout(() => { delete window[cb]; s.remove(); reject(new Error('Timeout')); }, 15000);
     window[cb] = (d) => { clearTimeout(t); delete window[cb]; s.remove(); resolve(d); };
     s.onerror = () => { clearTimeout(t); reject(new Error('Script hatasi')); };
-    // musteriEkle ve taksitGuncelle ayrı backend'de
-    const baseUrl = (data.action === 'musteriEkle' || data.action === 'taksitGuncelle') ? _MUSTERI_URL : _SHEETS_URL;
-    s.src = baseUrl + '?action=' + data.action + '&data=' + encodeURIComponent(JSON.stringify(data)) + '&callback=' + cb;
+    s.src = _SHEETS_URL + '?action=' + data.action + '&data=' + encodeURIComponent(JSON.stringify(data)) + '&callback=' + cb;
     document.head.appendChild(s);
   });
 }
