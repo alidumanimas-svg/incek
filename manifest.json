@@ -1,0 +1,26 @@
+{
+  "name": "İNCEK Gayrimenkul CRM",
+  "short_name": "İNCEK CRM",
+  "description": "İMAS Gayrimenkul müşteri ve tahsilat takip sistemi",
+  "start_url": "./index_fixed.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1b2d",
+  "theme_color": "#0f1b2d",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
