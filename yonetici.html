@@ -859,16 +859,14 @@ function renderErteleme() {
   }
 }
 
-// FETCH ile veri çek
+// JSONP ile veri çek (fetch iOS Safari'de CORS engeline takılıyor)
 async function loadData() {
   try {
     document.getElementById('status-text').textContent = 'Yükleniyor...';
-    const res = await fetch(SHEETS_URL + '?action=getData');
-    const data = await res.json();
+    const data = await jsonpFetch(SHEETS_URL + '?action=getData');
     // Ertelemeler ayrı çek
     try {
-      const ertRes = await fetch(SHEETS_URL + '?action=getErtelemeler');
-      const ertData = await ertRes.json();
+      const ertData = await jsonpFetch(SHEETS_URL + '?action=getErtelemeler');
       if(ertData.data) data.ertelemeler = ertData.data;
     } catch(e) { data.ertelemeler = []; }
 
