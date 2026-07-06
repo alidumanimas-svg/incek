@@ -430,9 +430,11 @@ function renderOzet() {
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
 
-  const toplamSozlesme = musteriler.filter(m=>m.DURUM!=='SÖZLEŞME İPTAL').reduce((s,m)=>s+(parseFloat(m['TOPLAM TUTAR'])||0),0);
-  const toplamOdenen = musteriler.filter(m=>m.DURUM!=='SÖZLEŞME İPTAL').reduce((s,m)=>s+(parseFloat(m['ÖDENEN'])||0),0);
-  const toplamKalan = musteriler.filter(m=>m.DURUM!=='SÖZLEŞME İPTAL').reduce((s,m)=>s+(parseFloat(m['KALAN'])||0),0);
+  const _iptalMi = (m) => (m.DURUM||'').toString().toUpperCase().includes('İPTAL')
+                        || (m.DURUM||'').toString().toUpperCase().includes('IPTAL');
+  const toplamSozlesme = musteriler.filter(m=>!_iptalMi(m)).reduce((s,m)=>s+(parseFloat(m['TOPLAM TUTAR'])||0),0);
+  const toplamOdenen = musteriler.filter(m=>!_iptalMi(m)).reduce((s,m)=>s+(parseFloat(m['ÖDENEN'])||0),0);
+  const toplamKalan = musteriler.filter(m=>!_iptalMi(m)).reduce((s,m)=>s+(parseFloat(m['KALAN'])||0),0);
   const aktifMusteri = musteriler.filter(m=>m.DURUM==='DEVAM EDİYOR').length;
   const geckmisMusteriler = musteriler.filter(m=>m.DURUM==='GECİKMİŞ').length;
 
@@ -859,14 +861,16 @@ function renderErteleme() {
   }
 }
 
-// JSONP ile veri çek (fetch iOS Safari'de CORS engeline takılıyor)
+// FETCH ile veri çek
 async function loadData() {
   try {
     document.getElementById('status-text').textContent = 'Yükleniyor...';
-    const data = await jsonpFetch(SHEETS_URL + '?action=getData');
+    const res = await fetch(SHEETS_URL + '?action=getData');
+    const data = await res.json();
     // Ertelemeler ayrı çek
     try {
-      const ertData = await jsonpFetch(SHEETS_URL + '?action=getErtelemeler');
+      const ertRes = await fetch(SHEETS_URL + '?action=getErtelemeler');
+      const ertData = await ertRes.json();
       if(ertData.data) data.ertelemeler = ertData.data;
     } catch(e) { data.ertelemeler = []; }
 

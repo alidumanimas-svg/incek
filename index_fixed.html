@@ -7275,24 +7275,28 @@ window.otomatikSheetsYukle = async function otomatikSheetsYukle() {
     console.log('Sheets: ' + musteriler.length + ' musteri yuklendi');
     const cntEl = document.getElementById('cnt-musteriler');
     if (cntEl) cntEl.textContent = musteriler.length;
-    // Dashboard KPI kartlarını güncelle
-    const cs = window.customers;
+    // Dashboard KPI kartlarını güncelle (İPTAL edilen sözleşmeler hariç — gerçek/aktif durum)
+    const csAll = window.customers;
+    const isIptal = (c) => (c.durum || '').toString().toUpperCase().includes('İPTAL')
+                        || (c.durum || '').toString().toUpperCase().includes('IPTAL');
+    const cs = csAll.filter(c => !isIptal(c));
+    const _iptalSayi = csAll.length - cs.length;
     const _gec = cs.filter(c=>c.durum==='GECİKMİŞ').length;
     const _dev = cs.filter(c=>c.durum==='DEVAM EDİYOR').length;
     const _tam = cs.filter(c=>c.durum==='TAMAMLANDI').length;
     const _satis = cs.reduce((s,c)=>s+(c.toplam||0),0);
-    const _odened = cs.reduce((s,c)=>s+(c.odened||0),0);
-    const _kalan = cs.reduce((s,c)=>s+(c.kalan||0),0);
-    const _gecKalan = cs.filter(c=>c.durum==='GECİKMİŞ').reduce((s,c)=>s+(c.kalan||0),0);
+    const _odened = cs.reduce((s,c)=>s+getRealOdened(c),0);
+    const _kalan = cs.reduce((s,c)=>s+getRealKalan(c),0);
+    const _gecKalan = cs.filter(c=>c.durum==='GECİKMİŞ').reduce((s,c)=>s+getRealKalan(c),0);
     function fmtDash(n) {
       if (Math.abs(n)>=1e9) return (n/1e9).toFixed(2)+' Mlr ₺';
       if (Math.abs(n)>=1e6) return (n/1e6).toFixed(2)+' MN';
       return n.toLocaleString('tr-TR');
     }
     const upd = (id,val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
-    upd('kpi-total', musteriler.length);
+    upd('kpi-total', cs.length);
     upd('kpi-gec', _gec);
-    upd('kpi-gec-sub', '%'+(_gec/musteriler.length*100).toFixed(1)+' oranında');
+    upd('kpi-gec-sub', '%'+(cs.length>0?(_gec/cs.length*100).toFixed(1):0)+' oranında');
     upd('kpi-dev', _dev);
     upd('kpi-tam', _tam);
     upd('kpi-satis', fmtDash(_satis));
