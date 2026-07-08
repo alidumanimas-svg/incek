@@ -5259,13 +5259,20 @@ function getRealOdened(c) {
 // müşteri seviyesinde {durum, gecikme, nextDue, toplamEksik} döndürülür.
 function dagitOdeme(c) {
   const bugun = new Date(); bugun.setHours(0,0,0,0);
-  let havuz = getRealOdened(c);
+  // Sisteme (localStorage) girilmiş taksit-bazlı ödemeler + müşteri-seviyesi ek ödeme
+  const sysOd = (typeof getMusteriOdemeler === 'function') ? getMusteriOdemeler(c.name) : [];
+  const sysBySno = {};
+  sysOd.forEach(o => { sysBySno[o.sno] = (sysBySno[o.sno] || 0) + (o.tutar || 0); });
+  let carry = (typeof getMusteriEkOdeme === 'function') ? (getMusteriEkOdeme(c.name) || 0) : 0;
   const sirali = (c.taksitler || []).slice().sort((a,b)=>((a.sno??999)-(b.sno??999)));
   let ilkKalanVade = null, toplamEksik = 0, maxGun = 0, gecikmisVar = false;
   sirali.forEach(t => {
     const tutar = t.tutar || 0;
-    const dagitilan = Math.max(0, Math.min(tutar, havuz));
-    havuz -= dagitilan;
+    // Bu taksite ait GERÇEK ödenen (Sheets + sistem) + önceki taksitten taşan fazla
+    const rec  = (t.odened_tutar || 0) + (sysBySno[t.sno] || 0);
+    const paid = rec + carry;
+    const dagitilan = Math.max(0, Math.min(tutar, paid));
+    carry = Math.max(0, paid - tutar);   // fazla → bir sonraki taksite akar
     const kalan = Math.max(0, tutar - dagitilan);
     let vadeGecti = false, gun = 0;
     if (t.vade) {
