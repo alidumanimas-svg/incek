@@ -542,7 +542,7 @@ registerServiceWorker();
 
 // ── SÜRÜM İŞARETİ + SW güncelleme zorla (Model B / havuz-şelale) ──────────
 (function(){
-  try { console.log('%c CRM Model-B2 (hibrit) AKTIF ', 'background:#4caf82;color:#fff;font-weight:700'); } catch(e){}
+  try { console.log('%c CRM Model-B3 (vade sirali) AKTIF ', 'background:#4caf82;color:#fff;font-weight:700'); } catch(e){}
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.update(); }); });
   }
@@ -550,7 +550,7 @@ registerServiceWorker();
     if (document.getElementById('surum-rozeti')) return;
     var b=document.createElement('div');
     b.id='surum-rozeti';
-    b.textContent='Model-B2 \u2713';
+    b.textContent='Model-B3 \u2713';
     b.style.cssText='position:fixed;bottom:6px;right:8px;z-index:99999;background:#4caf82;color:#fff;font:700 11px sans-serif;padding:3px 8px;border-radius:6px;opacity:.85';
     document.body.appendChild(b);
   }
@@ -5289,18 +5289,23 @@ function dagitOdeme(c) {
   let sysTop = 0;
   sysOd.forEach(o => { sysBySno[o.sno] = (sysBySno[o.sno] || 0) + (o.tutar || 0); sysTop += (o.tutar || 0); });
   const ek = (typeof getMusteriEkOdeme === 'function') ? (getMusteriEkOdeme(c.name) || 0) : 0;
-  const sirali = (c.taksitler || []).slice().sort((a,b)=>((a.sno??999)-(b.sno??999)));
-  // Taksit-bazlı ödenen verisi geliyor mu? Geliyorsa Model B, gelmiyorsa havuz (A).
+  // Bozuk S.NO'ya güvenme → VADE sırasına diz (peşinat/vadesiz en başa)
+  const sirali = (c.taksitler || []).slice().sort((a,b)=>{
+    const va = a.vade ? new Date(a.vade).getTime() : -8.64e15;
+    const vb = b.vade ? new Date(b.vade).getTime() : -8.64e15;
+    if (va !== vb) return va - vb;
+    return ((a.sno??0) - (b.sno??0));
+  });
+  // Taksitlere açıkça atanmış ödeme toplamı
   const perSum = sirali.reduce((s,t)=>s+(t.odened_tutar||0),0) + sysTop;
-  const useB = perSum > 0.5;
   const toplamOdenen = (typeof getRealOdened === 'function') ? getRealOdened(c) : ((c.odened||0) + ek);
-  let carry = useB ? ek : toplamOdenen;   // B: sadece ek ödeme akar; A: tüm havuz baştan akar
+  // Atanmamış ama toplama giren ödeme (ör. rakamı boş bırakılmış taksitler) → baştan akar
+  let carry = Math.max(0, toplamOdenen - perSum);
   let ilkKalanVade = null, toplamEksik = 0, maxGun = 0, gecikmisVar = false;
   sirali.forEach(t => {
     const tutar = t.tutar || 0;
-    // B'de taksitin kendi ödemesi (Sheets+sistem); A'da 0 (sadece havuz carry ile akar)
-    const rec  = useB ? ((t.odened_tutar || 0) + (sysBySno[t.sno] || 0)) : 0;
-    const paid = rec + carry;
+    const rec  = (t.odened_tutar || 0) + (sysBySno[t.sno] || 0);   // taksitin kendi ödemesi
+    const paid = rec + carry;                                       // + önceki devir
     const dagitilan = Math.max(0, Math.min(tutar, paid));
     carry = Math.max(0, paid - tutar);   // fazla → bir sonraki taksite akar
     const kalan = Math.max(0, tutar - dagitilan);
