@@ -5021,6 +5021,7 @@ function renderTakvim() {
 window.openModal = function openModal(name) {
   const c = customers.find(x => x.name === name);
   if (!c) return;
+  dagitOdeme(c); // Model B: taksitleri güncel (kendi ödemesi + devir) dağıtımla işaretle
   
   document.getElementById('modal-name').textContent = c.name;
   
@@ -5077,11 +5078,14 @@ window.openModal = function openModal(name) {
         </thead>
         <tbody>
           ${c.taksitler.map(t => {
-            const isPaid = PAID.includes(t.durum) ||
-      (!t.durum && t.odeme_tarihi && t.odened_tutar && t.odened_tutar >= (t.tutar * 0.99));
-            const diff = t.vade ? dayDiff(t.vade) : null;
-            const isLate = !isPaid && diff !== null && diff < 0;
-            const rowBg = isPaid ? 'rgba(76,175,130,0.08)' : isLate ? 'rgba(224,82,82,0.08)' : '';
+            // Model B: durum ham "ÖDENDİ" damgasından değil, gerçek dağıtımdan gelir
+            const durumW    = t._durumW || (PAID.includes(t.durum) ? 'ÖDENDİ' : 'BEKLİYOR');
+            const kalanW    = (t._kalanW != null) ? t._kalanW : (t.tutar || 0);
+            const dagitilan = (t._dagitilan != null) ? t._dagitilan : 0;
+            const effectivePaid = (durumW === 'ÖDENDİ');
+            const isKismi = (durumW === 'KISMİ' || durumW === 'KISMİ-GECİKMİŞ');
+            const isLate  = (durumW === 'GECİKMİŞ' || durumW === 'KISMİ-GECİKMİŞ');
+            const rowBg = effectivePaid ? 'rgba(76,175,130,0.08)' : isLate ? 'rgba(224,82,82,0.08)' : isKismi ? 'rgba(240,180,0,0.08)' : '';
             return `<tr style="background:${rowBg}">
               <td style="color:var(--gray)">${t.sno}</td>
               <td style="color:${isLate?'var(--red2)':'inherit'}">${fmtDate(t.vade)}</td>
@@ -5089,9 +5093,11 @@ window.openModal = function openModal(name) {
               <td style="font-weight:600">${t.tutar ? fmtFull(t.tutar) : '—'}</td>
               <td style="color:var(--gray);font-size:11px">${t.aciklama||'—'}</td>
               <td>
-                ${isPaid ? '<span class="badge tamamlandi">✓ Ödendi</span>' : 
-                  isLate ? '<span class="badge gecikmiş">Gecikmiş</span>' :
+                ${effectivePaid ? '<span class="badge tamamlandi">✓ Ödendi</span>' : 
+                  isLate ? `<span class="badge gecikmiş">${isKismi?'Kısmi · Gecikmiş':'Gecikmiş'}</span>` :
+                  isKismi ? '<span class="badge" style="background:rgba(240,180,0,0.18);color:#f0b400">Kısmi</span>' :
                   '<span class="badge devam">Bekliyor</span>'}
+                ${!effectivePaid && kalanW>0 ? `<div style="font-size:11px;color:${isLate?'var(--red2)':'var(--gray)'};margin-top:3px">Kalan: <b>${fmtFull(kalanW)}</b>${dagitilan>0?' · ödenen '+fmtFull(dagitilan):''}</div>` : ''}
               </td>
             </tr>`;
           }).join('')}
