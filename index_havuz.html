@@ -4907,7 +4907,7 @@ function renderGecikmiş() {
   const fp = document.getElementById('filter-gec-proje').value;
   const list = customers
     .filter(c => c.durum==='GECİKMİŞ' && (!fp || c.proje===fp))
-    .sort((a,b) => b.gecikme-a.gecikme);
+    .sort((a,b) => (b.toplamEksik||0)-(a.toplamEksik||0));
   
   document.getElementById('cnt-gecikmiş').textContent = list.length;
   
