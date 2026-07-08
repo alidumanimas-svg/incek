@@ -540,6 +540,24 @@ function pwaCur() {
 createManifest();
 registerServiceWorker();
 
+// ── SÜRÜM İŞARETİ + SW güncelleme zorla (Model B / havuz-şelale) ──────────
+(function(){
+  try { console.log('%c CRM Model-B (havuz-selale) AKTIF ', 'background:#4caf82;color:#fff;font-weight:700'); } catch(e){}
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.update(); }); });
+  }
+  function rozet(){
+    if (document.getElementById('surum-rozeti')) return;
+    var b=document.createElement('div');
+    b.id='surum-rozeti';
+    b.textContent='Model-B \u2713';
+    b.style.cssText='position:fixed;bottom:6px;right:8px;z-index:99999;background:#4caf82;color:#fff;font:700 11px sans-serif;padding:3px 8px;border-radius:6px;opacity:.85';
+    document.body.appendChild(b);
+  }
+  if (document.readyState!=='loading') rozet();
+  else document.addEventListener('DOMContentLoaded', rozet);
+})();
+
 // ════════════════════════════════════════════════════════════════════
 // KOMİSYON RAPORU
 // ════════════════════════════════════════════════════════════════════
