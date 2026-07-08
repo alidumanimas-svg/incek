@@ -352,7 +352,18 @@ async function excelGuncelle(event) {
       durum: t.du || t.durum || ''
     }))
     }));
-    
+
+    // ── Havuz-şelale ile durum/gecikme/eksik'i yeniden hesapla ──────────
+    // Sheets'teki statik durum/gecikme yerine, taksitlere dağıtılmış gerçek
+    // duruma göre hesaplanır (kısmi ödeme → eksik gecikmeye düşer, fazla → akar).
+    window.customers.forEach(c => {
+      const w = dagitOdeme(c);
+      c.durum = w.durum;
+      c.gecikme = w.gecikme;
+      c.next_due = w.nextDue;
+      c.toplamEksik = w.toplamEksik;
+    });
+
     document.getElementById('guncelleme-bar').style.width = '100%';
     
     // Özet
@@ -4896,7 +4907,7 @@ function renderGecikmiş() {
   const fp = document.getElementById('filter-gec-proje').value;
   const list = customers
     .filter(c => c.durum==='GECİKMİŞ' && (!fp || c.proje===fp))
-    .sort((a,b) => b.gecikme-a.gecikme);
+    .sort((a,b) => (b.toplamEksik||0)-(a.toplamEksik||0));
   
   document.getElementById('cnt-gecikmiş').textContent = list.length;
   
@@ -4918,7 +4929,8 @@ function renderGecikmiş() {
           ${c.temsilci?' • '+c.temsilci:''}
         </div>
         <div style="margin-top:8px;font-size:12px">
-          Kalan: <b style="color:var(--red2)">${fmtFull(c.kalan)}</b>
+          Gecikmiş: <b style="color:var(--red2)">${fmtFull(c.toplamEksik||0)}</b>
+          <span style="color:var(--gray)"> | Toplam kalan: ${fmtFull(getRealKalan(c))}</span>
           ${c.next_due?' | Vade: '+fmtDate(c.next_due):''}
         </div>
       </div>
@@ -5238,6 +5250,55 @@ function getRealOdened(c) {
   return c.odened + getMusteriEkOdeme(c.name);
 }
 
+// ── HAVUZ-ŞELALE ÖDEME DAĞITIMI ─────────────────────────────────────────────
+// Müşterinin toplam ödemesi (Sheets + sistem ödemeleri) tek havuz olarak alınır,
+// taksitlere sıra (S.NO) sırasıyla dağıtılır.
+//  • Eksik ödeme  → taksitin kalanı, vadesi geçmişse GECİKMİŞ/EKSİK olur.
+//  • Fazla ödeme  → artan bir sonraki taksite otomatik akar.
+// Her taksite _dagitilan/_kalanW/_durumW/_eksik/_gun alanları yazılır ve
+// müşteri seviyesinde {durum, gecikme, nextDue, toplamEksik} döndürülür.
+function dagitOdeme(c) {
+  const bugun = new Date(); bugun.setHours(0,0,0,0);
+  // Sisteme (localStorage) girilmiş taksit-bazlı ödemeler + müşteri-seviyesi ek ödeme
+  const sysOd = (typeof getMusteriOdemeler === 'function') ? getMusteriOdemeler(c.name) : [];
+  const sysBySno = {};
+  sysOd.forEach(o => { sysBySno[o.sno] = (sysBySno[o.sno] || 0) + (o.tutar || 0); });
+  let carry = (typeof getMusteriEkOdeme === 'function') ? (getMusteriEkOdeme(c.name) || 0) : 0;
+  const sirali = (c.taksitler || []).slice().sort((a,b)=>((a.sno??999)-(b.sno??999)));
+  let ilkKalanVade = null, toplamEksik = 0, maxGun = 0, gecikmisVar = false;
+  sirali.forEach(t => {
+    const tutar = t.tutar || 0;
+    // Bu taksite ait GERÇEK ödenen (Sheets + sistem) + önceki taksitten taşan fazla
+    const rec  = (t.odened_tutar || 0) + (sysBySno[t.sno] || 0);
+    const paid = rec + carry;
+    const dagitilan = Math.max(0, Math.min(tutar, paid));
+    carry = Math.max(0, paid - tutar);   // fazla → bir sonraki taksite akar
+    const kalan = Math.max(0, tutar - dagitilan);
+    let vadeGecti = false, gun = 0;
+    if (t.vade) {
+      const vd = new Date(t.vade); vd.setHours(0,0,0,0);
+      vadeGecti = vd < bugun;
+      if (kalan > 0 && vadeGecti) gun = Math.round((bugun - vd) / 86400000);
+    }
+    let durumW;
+    if (dagitilan >= tutar * 0.999 && tutar > 0) durumW = 'ÖDENDİ';
+    else if (dagitilan > 0)                      durumW = vadeGecti ? 'KISMİ-GECİKMİŞ' : 'KISMİ';
+    else                                         durumW = vadeGecti ? 'GECİKMİŞ' : 'BEKLİYOR';
+    const eksik = (kalan > 0 && vadeGecti) ? kalan : 0;
+    t._dagitilan = dagitilan; t._kalanW = kalan; t._durumW = durumW; t._eksik = eksik; t._gun = gun;
+    if (eksik > 0) { toplamEksik += eksik; gecikmisVar = true; if (gun > maxGun) maxGun = gun; }
+    if (kalan > 0 && !ilkKalanVade && t.vade) ilkKalanVade = t.vade;
+  });
+  const iptal = (c.durum === 'SÖZLEŞME İPTAL');
+  const kalanToplam = getRealKalan(c);
+  let durum;
+  if (iptal)                 durum = 'SÖZLEŞME İPTAL';
+  else if (kalanToplam <= 0) durum = 'TAMAMLANDI';
+  else if (gecikmisVar)      durum = 'GECİKMİŞ';
+  else                       durum = 'DEVAM EDİYOR';
+  return { durum, gecikme: maxGun, nextDue: ilkKalanVade, toplamEksik };
+}
+
 // ── MODAL'I ÖDEMELİ VERSİYONLA YENİDEN YÜKLE ────────────────────
 function openModal(name) {
   const c = customers.find(x => x.name === name);
@@ -5259,19 +5320,18 @@ function openModal(name) {
     ${c.gecikme>0 && realKalan>0 ? `<span class="badge gecikmiş">${c.gecikme} gün gecikti</span>` : ''}
     ${ekOdeme>0 ? `<span class="badge devam">+${fmtFull(ekOdeme)} ek ödeme</span>` : ''}`;
 
-  // Taksit tablosu — ek ödemeler dahil
+  // Taksit tablosu — havuz-şelale dağıtımı (kısmi/fazla ödeme dahil)
   const musteriOdemeler = getMusteriOdemeler(c.name);
+  dagitOdeme(c); // taksitlere _durumW/_kalanW/_dagitilan yaz
   const taksitHTML = c.taksitler.map(t => {
-    const isPaid = PAID.includes(t.durum);
-    // Bu taksit için sisteme girilen ödeme var mı?
     const sysOdeme = musteriOdemeler.filter(o => o.sno === t.sno);
-    const sysOdemeTotal = sysOdeme.reduce((s,o) => s+o.tutar, 0);
-    const isPaidInSys = sysOdemeTotal >= (t.tutar * 0.99);
-    const effectivePaid = isPaid || isPaidInSys;
-    
-    const diff = t.vade ? dayDiff(t.vade) : null;
-    const isLate = !effectivePaid && diff !== null && diff < 0;
-    const rowBg = effectivePaid ? 'rgba(76,175,130,0.08)' : isLate ? 'rgba(224,82,82,0.08)' : '';
+    const durumW    = t._durumW || (PAID.includes(t.durum) ? 'ÖDENDİ' : 'BEKLİYOR');
+    const kalanW    = (t._kalanW != null) ? t._kalanW : (t.tutar || 0);
+    const dagitilan = (t._dagitilan != null) ? t._dagitilan : 0;
+    const effectivePaid = (durumW === 'ÖDENDİ');
+    const isKismi = (durumW === 'KISMİ' || durumW === 'KISMİ-GECİKMİŞ');
+    const isLate  = (durumW === 'GECİKMİŞ' || durumW === 'KISMİ-GECİKMİŞ');
+    const rowBg = effectivePaid ? 'rgba(76,175,130,0.08)' : isLate ? 'rgba(224,82,82,0.08)' : isKismi ? 'rgba(240,180,0,0.08)' : '';
     
     const odemeFormId = `odeme-form-${t.sno}`;
     const gecmisId = `gecmis-${t.sno}`;
@@ -5297,10 +5357,13 @@ function openModal(name) {
           ${effectivePaid 
             ? '<span class="badge tamamlandi">✓ Ödendi</span>' 
             : isLate 
-              ? '<span class="badge gecikmiş">Gecikmiş</span>' 
-              : '<span class="badge devam">Bekliyor</span>'}
+              ? `<span class="badge gecikmiş">${isKismi?'Kısmi · Gecikmiş':'Gecikmiş'}</span>` 
+              : isKismi
+                ? '<span class="badge" style="background:rgba(240,180,0,0.18);color:#f0b400;border-color:#f0b400">Kısmi Ödendi</span>'
+                : '<span class="badge devam">Bekliyor</span>'}
+          ${!effectivePaid && kalanW>0 ? `<span style="font-size:11px;color:${isLate?'var(--red2)':'var(--gray)'}">Kalan: <b>${fmtFull(kalanW)}</b>${dagitilan>0?' (ödenen '+fmtFull(dagitilan)+')':''}</span>` : ''}
           ${!effectivePaid ? `
-            <button class="odeme-btn" onclick="toggleOdemeForm('${odemeFormId}', '${c.name.replace(/'/g,"\'")}', ${t.sno}, ${t.tutar})">
+            <button class="odeme-btn" onclick="toggleOdemeForm('${odemeFormId}', '${c.name.replace(/'/g,"\'")}', ${t.sno}, ${kalanW})">
               💳 Ödeme Al
             </button>` : ''}
           <button class="btn btn-outline" style="font-size:11px;padding:4px 8px;margin-top:4px" data-n="${c.name}" data-sno="${t.sno}" onclick="toggleDuzenlemeForm('duz-'+this.dataset.sno, this.dataset.n, this.dataset.sno)">✏️ Düzenle</button>
@@ -5310,7 +5373,7 @@ function openModal(name) {
           <div class="odeme-form-row">
             <div class="odeme-field">
               <label>Tutar (₺)</label>
-              <input type="number" id="odeme-tutar-${t.sno}" value="${t.tutar}" step="1">
+              <input type="number" id="odeme-tutar-${t.sno}" value="${kalanW}" step="1">
             </div>
             <div class="odeme-field">
               <label>Ödeme Tarihi</label>
@@ -6221,17 +6284,15 @@ function renderPlan() {
   const pending = [];
   customers.forEach(c => {
     if (fp && c.proje !== fp) return;
+    dagitOdeme(c); // havuz-şelale: taksitlere _kalanW/_eksik yaz
     c.taksitler.forEach(t => {
-      if (PAID.includes(t.durum)) return;
-      // Sisteme girilmiş ödeme var mı?
-      const sysOdeme = getMusteriOdemeler(c.name).filter(o => o.sno === t.sno);
-      const sysTotal = sysOdeme.reduce((s,o) => s+o.tutar, 0);
-      if (sysTotal >= (t.tutar * 0.99)) return; // ödenmiş say
       if (!t.vade) return;
+      const kalanW = (t._kalanW != null) ? t._kalanW : (t.tutar || 0);
+      if (kalanW <= 0) return; // havuzdan karşılandı (fazla ödeme dahil)
       const diff = dayDiff(t.vade);
       pending.push({
         musteri: c.name, proje: c.proje,
-        vade: t.vade, tutar: t.tutar, diff
+        vade: t.vade, tutar: kalanW, diff   // sadece eksik/kalan tutar
       });
     });
   });
