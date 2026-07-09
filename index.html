@@ -551,7 +551,7 @@ registerServiceWorker();
     if (document.getElementById('surum-rozeti')) return;
     var b=document.createElement('div');
     b.id='surum-rozeti';
-    b.textContent='v4 · MAMAK gizli';
+    b.textContent='v7 · dışa aktar';
     b.style.cssText='position:fixed;bottom:6px;right:8px;z-index:99999;background:#4caf82;color:#fff;font:700 11px sans-serif;padding:3px 8px;border-radius:6px;opacity:.85';
     document.body.appendChild(b);
   }
@@ -2882,6 +2882,64 @@ window.saveNot = async function(name, metin) {
     .topbar button { flex: 0 0 auto; white-space: nowrap; }
     .tabs { top: 0 !important; z-index: 95 !important; }
 
+    /* ── SADELEŞTİRME: mobilde üst sekme şeridi gizli, alt nav aktif ── */
+    .tabs { display: none !important; }
+    body { padding-bottom: 80px !important; }
+    .mobil-nav { display: flex !important; }
+  }
+
+  /* ── MOBİL ALT NAVİGASYON (5 ana + Daha) ───────────────────────── */
+  .mobil-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    background: rgba(16,26,42,.97); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
+  }
+  .mobil-nav button {
+    flex: 1; background: none; border: 0; color: #6b7f96; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 5px 0; font: 600 10px 'DM Sans', sans-serif; min-height: 0;
+    position: relative;
+  }
+  .mobil-nav button .mn-ic { font-size: 18px; line-height: 1 }
+  .mobil-nav button.on { color: #c9a84c; }
+  .mobil-nav .mn-badge {
+    position: absolute; top: 0; right: 22%; background: #e0524f; color: #fff;
+    font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 7px; line-height: 1.4;
+  }
+
+  /* "Daha" alt sayfası */
+  .daha-sheet {
+    position: fixed; inset: 0; z-index: 300; background: rgba(6,10,16,.72);
+    display: none; align-items: flex-end;
+  }
+  .daha-sheet.on { display: flex; }
+  .daha-in {
+    background: var(--navy2); width: 100%; max-height: 82vh; overflow-y: auto;
+    border-radius: 18px 18px 0 0; border-top: 1px solid var(--border);
+    padding: 16px 14px calc(22px + env(safe-area-inset-bottom));
+  }
+  .daha-grab { width: 34px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 14px }
+  .daha-baslik { font-size: 11px; font-weight: 700; letter-spacing: 1.3px; color: #6b7f96;
+    text-transform: uppercase; margin: 14px 0 8px }
+  .daha-baslik:first-of-type { margin-top: 0 }
+  .daha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+  .daha-grid button {
+    background: var(--navy3, rgba(255,255,255,.05)); border: 1px solid var(--border);
+    color: var(--white); border-radius: 11px; padding: 14px 12px; text-align: left;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+  }
+  .daha-grid .dg-ic { font-size: 18px; display: block; margin-bottom: 6px }
+  .daha-grid .dg-tl { font-weight: 600; font-size: 13px }
+
+  @media (min-width: 769px) {
+    .mobil-nav, .daha-sheet { display: none !important; }
+  }
+
+  @media (max-width: 768px) {
+    /* devamı (orijinal blok kapanışı için) */
+
     /* Tablolar: yatay kaydırılabilir + dokunmatik */
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; }
     table { font-size: 12px; min-width: 640px; }
@@ -3666,6 +3724,13 @@ window.saveNot = async function(name, metin) {
       title="Sheets'ten güncel veriyi çek">
       🔄 Yenile
     </button>
+    <button onclick="disaAktar()" style="
+      padding:7px 13px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);
+      background:rgba(255,255,255,0.06);color:#cfe0f0;font-family:'DM Sans',sans-serif;
+      font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap"
+      title="Bu ekrandaki listeyi PDF veya Excel olarak indir">
+      📤 Dışa Aktar
+    </button>
     <button onclick="yeniMusteriAc()" 
       style="background:rgba(76,175,130,0.15);border:1px solid rgba(76,175,130,0.4);color:#4caf82;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:'DM Sans'">
       ➕ Yeni Müşteri
@@ -3693,6 +3758,55 @@ window.saveNot = async function(name, metin) {
 
   <div class="tab" onclick="switchTab('rapor')">📈 Raporlar</div>
   <div class="tab" onclick="switchTab('ayarlar')">⚙️ Ayarlar</div>
+</div>
+
+<!-- ══ MOBİL ALT NAVİGASYON ══ -->
+<nav class="mobil-nav" id="mobil-nav">
+  <button class="on" data-tab="dashboard" onclick="mnGo(this,'dashboard')">
+    <span class="mn-ic">📊</span>Bugün</button>
+  <button data-tab="musteriler" onclick="mnGo(this,'musteriler')">
+    <span class="mn-ic">👥</span>Müşteri</button>
+  <button data-tab="gecikmiş" onclick="mnGo(this,'gecikmiş')">
+    <span class="mn-ic">⚠️</span>Gecikmiş<span class="mn-badge" id="mn-gec-badge"></span></button>
+  <button data-tab="plan" onclick="mnGo(this,'plan')">
+    <span class="mn-ic">💰</span>Tahsilat</button>
+  <button data-tab="komisyon" onclick="mnGo(this,'komisyon')">
+    <span class="mn-ic">💵</span>Komisyon</button>
+  <button onclick="dahaAc()">
+    <span class="mn-ic">⋯</span>Daha</button>
+</nav>
+
+<!-- ══ "DAHA" ALT SAYFASI ══ -->
+<div class="daha-sheet" id="daha-sheet" onclick="if(event.target===this)dahaKapat()">
+  <div class="daha-in">
+    <div class="daha-grab"></div>
+
+    <div class="daha-baslik">Sık kullanılan</div>
+    <div class="daha-grid">
+      <button onclick="dahaGit('hizli-odeme')"><span class="dg-ic">⚡</span><span class="dg-tl">Hızlı Ödeme</span></button>
+      <button onclick="dahaGit('takvim')"><span class="dg-ic">📅</span><span class="dg-tl">Ödeme Takvimi</span></button>
+    </div>
+
+    <div class="daha-baslik">Tahsilat görünümleri</div>
+    <div class="daha-grid">
+      <button onclick="dahaGit('tahsilat-ozet')"><span class="dg-ic">📋</span><span class="dg-tl">Tahsilat Özeti</span></button>
+      <button onclick="dahaGit('takvim2')"><span class="dg-ic">📆</span><span class="dg-tl">Takvim</span></button>
+    </div>
+
+    <div class="daha-baslik">Takip</div>
+    <div class="daha-grid">
+      <button onclick="dahaGit('aramalist')"><span class="dg-ic">📞</span><span class="dg-tl">Arama Listesi</span></button>
+      <button onclick="dahaGit('karalist')"><span class="dg-ic">🚫</span><span class="dg-tl">Kara Liste</span></button>
+      <button onclick="dahaGit('faiz')"><span class="dg-ic">💸</span><span class="dg-tl">Gecikme Faizi</span></button>
+      <button onclick="dahaGit('temsilci')"><span class="dg-ic">👤</span><span class="dg-tl">Temsilciler</span></button>
+    </div>
+
+    <div class="daha-baslik">Rapor ve ayar</div>
+    <div class="daha-grid">
+      <button onclick="dahaGit('rapor')"><span class="dg-ic">📈</span><span class="dg-tl">Raporlar</span></button>
+      <button onclick="dahaGit('ayarlar')"><span class="dg-ic">⚙️</span><span class="dg-tl">Ayarlar</span></button>
+    </div>
+  </div>
 </div>
 
 
@@ -4827,13 +4941,19 @@ function dayDiff(s) {
 window.switchTab = function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display='none');
-  event.target.closest('.tab').classList.add('active');
-  document.getElementById('tab-'+tab).style.display='block';
+  // event yoksa (programatik çağrı) sekmeyi onclick'inden bul
+  let el = (typeof event !== 'undefined' && event && event.target) ? event.target.closest('.tab') : null;
+  if (!el) el = Array.from(document.querySelectorAll('.tabs .tab'))
+    .find(t => (t.getAttribute('onclick')||'').indexOf("'"+tab+"'") > -1);
+  if (el) el.classList.add('active');
+  const panel = document.getElementById('tab-'+tab);
+  if (panel) panel.style.display='block';
   if (tab==='musteriler') { currentPage=1; filterAndRender(); }
   if (tab==='gecikmiş') renderGecikmiş();
   if (tab==='takvim') renderTakvim();
   if (tab==='plan') renderPlan();
   if (tab==='tahsilat-ozet') renderTahsilatOzet();
+  if (typeof mnBadgeGuncelle === 'function') mnBadgeGuncelle();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -5155,26 +5275,77 @@ window.openModal = function openModal(name) {
       </table>
     </div>`;
   
-  // Butonları DOM ile ekle
+  // Butonları DOM ile ekle — 3 ana aksiyon + "⋯ Diğer" menüsü
   setTimeout(function() {
     var mb = document.getElementById('modal-body');
     if (!mb || mb.querySelector('.modal-action-btns')) return;
     var div = document.createElement('div');
     div.className = 'modal-action-btns';
-    div.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 14px 0;padding:0 4px';
-    var btns = [
-      ['btn-gold','toggleYeniTaksitForm','➕ Yeni Taksit',''],
-      ['btn-outline','exportMusteriExcel','📥 Excel',''],
-      ['btn-outline','sozlesmePDF','📄 PDF','color:#f87171'],
-      ['btn-outline','whatsappMesaj','💬 WhatsApp','color:#25d366'],
-      ['btn-outline','smsMesaj','📱 SMS',''],
-      ['btn-outline','aramaGecmisiGoster','📞 Arama',''],
-      ['btn-outline','qrKodGoster','📱 QR Kod',''],
-      ['btn-outline','gecikmeFailzi','📈 Gecikme Faizi','color:var(--orange)'],
-      ['btn-outline','serbestOdemeAc','💰 Serbest Ödeme','color:#4caf82'],
-      ['btn-outline','toggleKaraListe','🚫 Kara Liste',''],
-      ['btn-outline','sozlesmeIptalEt','🚫 İptal','color:#e05252'],
+    div.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px 0;padding:0 4px;align-items:center';
+
+    // Günlük işte kullanılan 3 aksiyon önde
+    var anaBtns = [
+      ['btn-gold','serbestOdemeAc','💳 Ödeme Al',''],
+      ['btn-outline','aramaGecmisiGoster','📞 Ara',''],
+      ['btn-outline','toggleYeniTaksitForm','➕ Taksit',''],
     ];
+    // Geri kalanı menüde
+    var digerBtns = [
+      ['exportMusteriExcel','📥 Excel'],
+      ['sozlesmePDF','📄 PDF'],
+      ['whatsappMesaj','💬 WhatsApp'],
+      ['smsMesaj','📱 SMS'],
+      ['qrKodGoster','📱 QR Kod'],
+      ['gecikmeFailzi','📈 Gecikme Faizi'],
+      ['toggleKaraListe','🚫 Kara Liste'],
+      ['sozlesmeIptalEt','🚫 Sözleşme İptal'],
+    ];
+
+    anaBtns.forEach(function(b) {
+      var btn = document.createElement('button');
+      btn.className = 'btn ' + b[0];
+      btn.style.cssText = 'font-size:12px;padding:8px 12px;font-weight:600;' + b[3];
+      btn.textContent = b[2];
+      var fn = b[1]; var n = name;
+      btn.onclick = function() { if(window[fn]) window[fn](n); };
+      div.appendChild(btn);
+    });
+
+    // ⋯ Diğer (açılır menü)
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;display:inline-block';
+    var more = document.createElement('button');
+    more.className = 'btn btn-outline';
+    more.style.cssText = 'font-size:14px;padding:8px 13px;font-weight:700;line-height:1';
+    more.textContent = '⋯';
+    more.title = 'Diğer işlemler';
+
+    var menu = document.createElement('div');
+    menu.style.cssText = 'display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:400;'+
+      'background:var(--navy2,#16202e);border:1px solid var(--border,#25334a);border-radius:11px;'+
+      'padding:6px;min-width:190px;box-shadow:0 12px 32px rgba(0,0,0,.45)';
+    digerBtns.forEach(function(b) {
+      var mi = document.createElement('button');
+      mi.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:0;'+
+        'color:var(--white,#e8eef7);padding:10px 11px;border-radius:7px;cursor:pointer;'+
+        "font:500 13px 'DM Sans',sans-serif";
+      mi.textContent = b[1];
+      mi.onmouseover = function(){ this.style.background='rgba(255,255,255,.06)'; };
+      mi.onmouseout  = function(){ this.style.background='none'; };
+      var fn = b[0]; var n = name;
+      mi.onclick = function(e) { e.stopPropagation(); menu.style.display='none';
+        if(window[fn]) window[fn](n); };
+      menu.appendChild(mi);
+    });
+    more.onclick = function(e) {
+      e.stopPropagation();
+      menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    };
+    document.addEventListener('click', function(){ menu.style.display='none'; });
+    wrap.appendChild(more); wrap.appendChild(menu);
+    div.appendChild(wrap);
+
+    var btns = []; // eski döngü devre dışı (geriye dönük uyum)
     btns.forEach(function(b) {
       var btn = document.createElement('button');
       btn.className = 'btn ' + b[0];
@@ -5331,6 +5502,150 @@ function gizliFiltreUygula(){
   window.customers = window.customers.filter(c => g.indexOf((c.proje||'').trim()) === -1);
   try { console.log('Gizli projeler:', g.join(', '), '| görünen müşteri:', window.customers.length); } catch(e){}
 }
+
+// ── MOBİL ALT NAVİGASYON ────────────────────────────────────────────────────
+// switchTab() event.target'a bağımlı; alt nav'dan çağrılınca sekme şeridindeki
+// doğru .tab öğesini bulup onun click'ini tetikliyoruz (mantığı bozmadan).
+window.mnGo = function(btn, tab){
+  document.querySelectorAll('.mobil-nav button').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  gitSekme(tab);
+  dahaKapat();
+  window.scrollTo({top:0, behavior:'instant'});
+};
+
+function gitSekme(tab){
+  // Üst şeritteki eşleşen sekmeyi bul ve tıklat → tüm render mantığı çalışır
+  const hedef = Array.from(document.querySelectorAll('.tabs .tab'))
+    .find(t => (t.getAttribute('onclick')||'').indexOf("'"+tab+"'") > -1);
+  if (hedef) { hedef.click(); return; }
+  // Bulunamazsa doğrudan göster (yedek yol)
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display='none');
+  const p = document.getElementById('tab-'+tab);
+  if (p) p.style.display='block';
+}
+
+window.dahaAc    = function(){ document.getElementById('daha-sheet').classList.add('on'); };
+window.dahaKapat = function(){ document.getElementById('daha-sheet').classList.remove('on'); };
+window.dahaGit   = function(tab){
+  // "Daha" içinden gidilen sekme, alt nav'da hiçbirini aktif yapmaz
+  document.querySelectorAll('.mobil-nav button').forEach(b => b.classList.remove('on'));
+  gitSekme(tab);
+  dahaKapat();
+  window.scrollTo({top:0, behavior:'instant'});
+};
+
+// Gecikmiş rozetini alt nav'a yansıt
+window.mnBadgeGuncelle = function(){
+  const el = document.getElementById('mn-gec-badge');
+  if (!el || !window.customers) return;
+  const n = window.customers.filter(c => c.durum === 'GECİKMİŞ').length;
+  el.textContent = n > 99 ? '99+' : (n || '');
+  el.style.display = n ? 'block' : 'none';
+};
+setTimeout(mnBadgeGuncelle, 1500);
+setTimeout(mnBadgeGuncelle, 4000);
+
+// ── BAĞLAMA DUYARLI DIŞA AKTARMA ────────────────────────────────────────────
+// Tek düğme: hangi sekmedeysen o ekranın listesini (filtreleriyle) PDF/Excel verir.
+window.aktifSekme = function(){
+  const t = document.querySelector('.tab.active');
+  const m = t && (t.getAttribute('onclick')||'').match(/'([^']+)'/);
+  return m ? m[1] : 'dashboard';
+};
+
+// Görünürdeki müşteri listesi (proje filtresi uygulanmış)
+function _filtreliMusteriler(selId){
+  const sel = document.getElementById(selId);
+  const p = sel ? sel.value : '';
+  let list = (window.customers || []);
+  if (p) list = list.filter(c => c.proje === p);
+  return list;
+}
+
+function _csvIndir(basliklar, satirlar, dosyaAdi){
+  let csv = '\uFEFF' + basliklar.join(';') + '\n';
+  satirlar.forEach(r => { csv += r.map(x => (x==null?'':String(x)).replace(/;/g,',')).join(';') + '\n'; });
+  if (typeof indir === 'function') indir(csv, dosyaAdi);
+  else {
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    a.download=dosyaAdi; a.click();
+  }
+}
+
+const _EXPORT_TARIH = () => new Date().toISOString().split('T')[0];
+
+// Her sekme için: başlık + satır üreteci
+const EXPORT_HARITA = {
+  'musteriler': {
+    ad: 'Müşteri Listesi',
+    excel: () => {
+      const list = _filtreliMusteriler('filter-proje');
+      _csvIndir(
+        ['PROJE','ADI SOYADI','DAİRE','TOPLAM','ÖDENEN','KALAN','DURUM','GECİKME GÜN','TELEFON','TEMSİLCİ'],
+        list.map(c => [c.proje,c.name,c.kat,c.toplam,getRealOdened(c),getRealKalan(c),c.durum,c.gecikme||0,c.tel,c.temsilci]),
+        `incek_musteriler_${_EXPORT_TARIH()}.csv`);
+    },
+    pdf: () => (window.exportPDF ? exportPDF() : window.print())
+  },
+  'gecikmiş': {
+    ad: 'Gecikmiş Ödemeler',
+    excel: () => {
+      const list = _filtreliMusteriler('filter-gec-proje').filter(c => c.durum==='GECİKMİŞ')
+        .sort((a,b)=>(b.toplamEksik||0)-(a.toplamEksik||0));
+      _csvIndir(
+        ['PROJE','ADI SOYADI','GECİKMİŞ TUTAR','TOPLAM KALAN','GECİKME GÜN','SONRAKİ VADE','TELEFON'],
+        list.map(c => [c.proje,c.name,Math.round(c.toplamEksik||0),Math.round(getRealKalan(c)),c.gecikme||0,c.next_due||'',c.tel]),
+        `incek_gecikmis_${_EXPORT_TARIH()}.csv`);
+    },
+    pdf: () => (window['exportGecikmiş'] ? window['exportGecikmiş']() : window.print())
+  },
+  'komisyon': {
+    ad: 'Komisyon Raporu',
+    excel: () => (window.exportKomisyonCSV ? exportKomisyonCSV() : alert('Komisyon verisi yüklenmedi')),
+    pdf: () => window.print()
+  },
+  'karalist':  { ad:'Kara Liste', excel: () => (window.exportKaraCSV?exportKaraCSV():0), pdf: () => window.print() },
+  'faiz':      { ad:'Gecikme Faizi', excel: () => (window.exportFaizCSV?exportFaizCSV():0), pdf: () => window.print() },
+  'plan':      { ad:'Tahsilat Planı', excel: () => (window.exportTumOdemeler?exportTumOdemeler():0), pdf: () => window.print() },
+  'tahsilat-ozet': { ad:'Tahsilat Özeti', excel: () => (window.exportTumExcel?exportTumExcel():0),
+                     pdf: () => (window.tahsilatOzetPDF?tahsilatOzetPDF():window.print()) },
+  'dashboard': { ad:'Genel Özet', excel: () => (window.exportTumExcel?exportTumExcel():0),
+                 pdf: () => (window.projeRaporPDF?projeRaporPDF():window.print()) },
+};
+
+window.disaAktar = function(){
+  const tab = aktifSekme();
+  const h = EXPORT_HARITA[tab] || EXPORT_HARITA['dashboard'];
+  const eski = document.getElementById('export-menu');
+  if (eski) { eski.remove(); return; }
+
+  const m = document.createElement('div');
+  m.id = 'export-menu';
+  m.style.cssText = 'position:fixed;z-index:999;right:12px;top:64px;background:var(--navy2,#16202e);'+
+    'border:1px solid var(--border,#25334a);border-radius:12px;padding:8px;min-width:210px;'+
+    'box-shadow:0 14px 36px rgba(0,0,0,.5)';
+  m.innerHTML =
+    '<div style="font-size:11px;color:#6b7f96;padding:5px 9px 8px;font-weight:700;letter-spacing:.6px">'+
+      h.ad.toUpperCase()+'</div>';
+
+  [['📊 Excel (CSV) indir','excel'],['📄 PDF / Yazdır','pdf']].forEach(function(o){
+    const b=document.createElement('button');
+    b.style.cssText='display:block;width:100%;text-align:left;background:none;border:0;color:#e8eef7;'+
+      "padding:11px;border-radius:8px;cursor:pointer;font:600 13px 'DM Sans',sans-serif";
+    b.textContent=o[0];
+    b.onmouseover=function(){this.style.background='rgba(255,255,255,.06)'};
+    b.onmouseout =function(){this.style.background='none'};
+    b.onclick=function(e){ e.stopPropagation(); m.remove();
+      try { h[o[1]](); } catch(err){ alert('Dışa aktarma hatası: '+err.message); } };
+    m.appendChild(b);
+  });
+  document.body.appendChild(m);
+  setTimeout(function(){ document.addEventListener('click', function kapat(){ 
+    const el=document.getElementById('export-menu'); if(el) el.remove();
+    document.removeEventListener('click',kapat); }); }, 10);
+};
 
 function getRealOdened(c) {
   return c.odened + getMusteriEkOdeme(c.name);
