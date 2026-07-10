@@ -551,7 +551,7 @@ registerServiceWorker();
     if (document.getElementById('surum-rozeti')) return;
     var b=document.createElement('div');
     b.id='surum-rozeti';
-    b.textContent='v7 · dışa aktar';
+    b.textContent='v8 · Model A';
     b.style.cssText='position:fixed;bottom:6px;right:8px;z-index:99999;background:#4caf82;color:#fff;font:700 11px sans-serif;padding:3px 8px;border-radius:6px;opacity:.85';
     document.body.appendChild(b);
   }
@@ -5660,31 +5660,21 @@ function getRealOdened(c) {
 // müşteri seviyesinde {durum, gecikme, nextDue, toplamEksik} döndürülür.
 function dagitOdeme(c) {
   const bugun = new Date(); bugun.setHours(0,0,0,0);
-  // Sisteme (localStorage) girilmiş taksit-bazlı ödemeler + müşteri-seviyesi ek ödeme
-  const sysOd = (typeof getMusteriOdemeler === 'function') ? getMusteriOdemeler(c.name) : [];
-  const sysBySno = {};
-  let sysTop = 0;
-  sysOd.forEach(o => { sysBySno[o.sno] = (sysBySno[o.sno] || 0) + (o.tutar || 0); sysTop += (o.tutar || 0); });
-  const ek = (typeof getMusteriEkOdeme === 'function') ? (getMusteriEkOdeme(c.name) || 0) : 0;
-  // Bozuk S.NO'ya güvenme → VADE sırasına diz (peşinat/vadesiz en başa)
+  // MODEL A — HAVUZ-ŞELALE: müşterinin toplam ödemesi tek havuz, vade sırasıyla dağıtılır.
+  // Taksit satırındaki "ÖDENDİ" damgası ve S.NO dikkate ALINMAZ (ikisi de güvenilmez;
+  // ödemeler sık sık yanlış taksit satırına yazılıyor).
   const sirali = (c.taksitler || []).slice().sort((a,b)=>{
     const va = a.vade ? new Date(a.vade).getTime() : -8.64e15;
     const vb = b.vade ? new Date(b.vade).getTime() : -8.64e15;
     if (va !== vb) return va - vb;
     return ((a.sno??0) - (b.sno??0));
   });
-  // Taksitlere açıkça atanmış ödeme toplamı
-  const perSum = sirali.reduce((s,t)=>s+(t.odened_tutar||0),0) + sysTop;
-  const toplamOdenen = (typeof getRealOdened === 'function') ? getRealOdened(c) : ((c.odened||0) + ek);
-  // Atanmamış ama toplama giren ödeme (ör. rakamı boş bırakılmış taksitler) → baştan akar
-  let carry = Math.max(0, toplamOdenen - perSum);
+  let pool = (typeof getRealOdened === 'function') ? getRealOdened(c) : (c.odened || 0);
   let ilkKalanVade = null, toplamEksik = 0, maxGun = 0, gecikmisVar = false;
   sirali.forEach(t => {
     const tutar = t.tutar || 0;
-    const rec  = (t.odened_tutar || 0) + (sysBySno[t.sno] || 0);   // taksitin kendi ödemesi
-    const paid = rec + carry;                                       // + önceki devir
-    const dagitilan = Math.max(0, Math.min(tutar, paid));
-    carry = Math.max(0, paid - tutar);   // fazla → bir sonraki taksite akar
+    const dagitilan = Math.max(0, Math.min(tutar, pool));
+    pool -= dagitilan;
     const kalan = Math.max(0, tutar - dagitilan);
     let vadeGecti = false, gun = 0;
     if (t.vade) {
