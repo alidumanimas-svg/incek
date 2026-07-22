@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="İNCEK Takip">
-  <link rel="manifest" href="manifest.json" id="pwa-manifest">
+  <!-- manifest devre disi (file:// uyumu) -->
   <link rel="apple-touch-icon" href="icon-192.png" id="pwa-icon">
   <meta name="theme-color" content="#0f1b2d">
 
@@ -488,10 +488,11 @@ function createManifest() {
   // Gerçek manifest.json dosyası varsa ona dokunma (HTML head'de href tanımlı);
   // yoksa (eski davranış) blob ile oluştur.
   const mEl = document.getElementById('pwa-manifest');
+  if (!mEl) return;
   if (!mEl.getAttribute('href') || mEl.getAttribute('href').startsWith('blob:')) {
     const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
     mEl.href = URL.createObjectURL(blob);
-    document.getElementById('pwa-icon').href = PWA_ICON_URL;
+    var ic = document.getElementById('pwa-icon'); if (ic) ic.href = PWA_ICON_URL;
   }
 }
 
@@ -620,7 +621,7 @@ function komOdemeKaydet(name) {
   // Sheets'e yaz - JSONP ile
   const c = customers.find(x=>x.name===name);
   const proje = c ? c.proje : '';
-  const SHEETS_URL = localStorage.getItem('incek_sheets_url') || 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+  const SHEETS_URL = localStorage.getItem('incek_sheets_url') || 'https://script.google.com/macros/s/AKfycbzN9H56JBHSMFmBj_2J1oIlDwtedzYS-emMvCAT332e3vPxkkYdE-_jbCxVJRT_mG8/exec';
   const data = encodeURIComponent(JSON.stringify({ musteri:name, proje:proje, tutar:tutar, tarih:tarih, sekil:sekil }));
   myJsonpFetch(SHEETS_URL + '?action=komisyonOdemeKaydet&data=' + data)
     .then(d=>{ 
@@ -2103,7 +2104,7 @@ function jsonpFetch(url) {
 }
 
 function getSheetsUrl() {
-  return localStorage.getItem(SHEETS_URL_KEY) || 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+  return localStorage.getItem(SHEETS_URL_KEY) || 'https://script.google.com/macros/s/AKfycbzN9H56JBHSMFmBj_2J1oIlDwtedzYS-emMvCAT332e3vPxkkYdE-_jbCxVJRT_mG8/exec';
 }
 
 function setSheetsStatus(durum, mesaj) {
@@ -5479,7 +5480,7 @@ function getRealKalan(c) {
 //   gizle('MAMAK')  /  goster('MAMAK')  /  gizliProjeler()
 const GIZLI_KEY = 'incek_gizli_projeler';
 function gizliProjeler(){
-  try { return JSON.parse(localStorage.getItem(GIZLI_KEY) || '["MAMAK","MAMAK-A1","MAMAK-B1"]'); }
+  try { return JSON.parse(localStorage.getItem(GIZLI_KEY) || '[]'); }
   catch(e){ return []; }
 }
 function gizliMi(proje){
@@ -6042,7 +6043,7 @@ async function kaydetYeniTaksit(name) {
   sonuc.innerHTML = '<span style="color:var(--gold2)">Sheets\'e yaziliyor...</span>';
 
   // 3) Sheets'e yaz (JSONP)
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+  const SHEETS_URL = localStorage.getItem('incek_sheets_url') || 'https://script.google.com/macros/s/AKfycbzN9H56JBHSMFmBj_2J1oIlDwtedzYS-emMvCAT332e3vPxkkYdE-_jbCxVJRT_mG8/exec';
   try {
     await new Promise((resolve, reject) => {
       const cbName = 'ytCb_' + Date.now();
@@ -7594,7 +7595,7 @@ window.sheetsYenile = async function sheetsYenile() {
 }
 
 window.otomatikSheetsYukle = async function otomatikSheetsYukle() {
-  const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+  const SHEETS_URL = localStorage.getItem('incek_sheets_url') || 'https://script.google.com/macros/s/AKfycbzN9H56JBHSMFmBj_2J1oIlDwtedzYS-emMvCAT332e3vPxkkYdE-_jbCxVJRT_mG8/exec';
   
   // Kendi JSONP fetch
   function myJsonpFetch(url) {
@@ -7626,8 +7627,8 @@ window.otomatikSheetsYukle = async function otomatikSheetsYukle() {
     }
     const taksitler_all = data.taksitler || [];
     const musteriler = data.musteriler.map(d => {
-      const adSoyadi = d['ADI SOYADI'] || '';
-      const proje = d['PROJE'] || '';
+      const adSoyadi = String(d['ADI SOYADI'] || '');
+      const proje = String(d['PROJE'] || '');
       const taksitler = taksitler_all
         .filter(t => String(t['ADI SOYADI']||'').trim().toUpperCase() === adSoyadi.trim().toUpperCase() && String(t['PROJE']||'').trim() === proje.trim())
         .map(t => ({
@@ -8574,7 +8575,7 @@ function projeRaporuPDF() {
 </script>
 <script>
 // ── SHEETS TAM BACKEND ────────────────────────────────────────────
-const SHEETS_URL_V5 = localStorage.getItem('incek_sheets_url') || 'https://script.google.com/macros/s/AKfycbxo1ioZM4sRv243ZNCcojSFwpfifkT3JM61dmpfONUTrvi0u6Cwmerwa4g4ef3uDtU/exec';
+const SHEETS_URL_V5 = localStorage.getItem('incek_sheets_url') || 'https://script.google.com/macros/s/AKfycbzN9H56JBHSMFmBj_2J1oIlDwtedzYS-emMvCAT332e3vPxkkYdE-_jbCxVJRT_mG8/exec';
 
 function sheetsJsonp(params) {
   return new Promise((resolve, reject) => {
@@ -8830,7 +8831,7 @@ window.sheetsBaslandir = async function sheetsBaslandir(urlParam) {
 </script>
 <script>
 // ── SHEETS YAZMA FONKSİYONLARI ───────────────────────────────────
-const _SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxFzG_58Dbo8hpgqehSurRimyv-1YC0aePmb3ihoM6D2uLm6g91RLhtQIxHOeR5kTo/exec';
+const _SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzN9H56JBHSMFmBj_2J1oIlDwtedzYS-emMvCAT332e3vPxkkYdE-_jbCxVJRT_mG8/exec';
 
 function sheetsPost(data) {
   return new Promise((resolve, reject) => {
